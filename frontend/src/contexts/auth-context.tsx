@@ -45,7 +45,7 @@ export function AuthProvider({
         await api.get('/auth/me');
 
       setUser(response.data);
-      console.log(response)
+      console.log('resposta do load user aqui <><><><>',response.data.user)
     } catch (error) {
       console.error(error);
     }

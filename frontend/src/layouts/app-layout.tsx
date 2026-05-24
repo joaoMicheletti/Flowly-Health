@@ -5,30 +5,38 @@ import {
   LogOut,
 } from 'lucide-react';
 
-import { Link, Outlet } from 'react-router-dom';
-
-import { useNavigate } from 'react-router-dom';
+import {
+  Link,
+  Outlet,
+  useNavigate,
+} from 'react-router-dom';
 
 import { useAuth } from '@/contexts/auth-context';
 
 export function AppLayout() {
-    const { user, signOut } = useAuth();    
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    function handleLogout() {
+  const { user, signOut } =
+    useAuth();
+
+  function handleLogout() {
     signOut();
 
     navigate('/');
-    }
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-100">
       <aside className="w-64 bg-slate-900 p-6 text-white">
-        <h1 className="mb-10 text-3xl font-bold">
-          Flowly
-        </h1>
-        <span className="text-sm text-slate-400">
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold">
+            Flowly
+          </h1>
+
+          <span className="text-sm text-slate-400">
             {user?.name}
-        </span>
+          </span>
+        </div>
 
         <nav className="space-y-2">
           <Link
@@ -61,7 +69,7 @@ export function AppLayout() {
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-xl p-3 transition hover:bg-slate-800"
-            >
+          >
             <LogOut size={20} />
 
             Sair

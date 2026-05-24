@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
-
+import { toast } from 'sonner';
 import { api } from '@/services/api';
+import {Button} from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Modal } from '@/components/ui/modal';
+import { Table } from '@/components/ui/table';
 
 interface Patient {
   id: string;
@@ -19,6 +23,8 @@ export function PatientsPage() {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [patients, setPatients] = useState<Patient[]>([]);
+    const [search, setSearch] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
   async function loadPatients() {
     try {
@@ -33,25 +39,29 @@ export function PatientsPage() {
 
   async function handleCreatePatient() {
     try {
-        await api.post('/patients', {
+      setIsLoading(true);
+
+      await api.post('/patients', {
         name,
         email,
         phone,
-        });
+      });
 
-        setName('');
-        setEmail('');
-        setPhone('');
+      toast.success(
+        'Paciente criado com sucesso',
+      );
 
-        setIsModalOpen(false);
+      loadPatients();
 
-        loadPatients();
+      setIsModalOpen(false);
     } catch (error) {
-        console.error(error);
+      console.error(error);
 
-        alert(
+      toast.error(
         'Erro ao criar paciente',
-        );
+      );
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -62,13 +72,15 @@ export function PatientsPage() {
       await api.delete(
         `/patients/${id}`,
       );
-
+      toast.success(
+        'Paciente Deletado com sucesso',
+      );
       loadPatients();
     } catch (error) {
       console.error(error);
 
-      alert(
-        'Erro ao deletar paciente',
+      toast.error(
+        'Erro ao Deletar paciente.',
       );
     }
   }
@@ -107,17 +119,28 @@ export function PatientsPage() {
       setPhone('');
 
       setIsModalOpen(false);
+      toast.success(
+        'Paciente atualizado com sucesso',
+      );
 
       loadPatients();
     } catch (error) {
       console.error(error);
 
-      alert(
-        'Erro ao atualizar paciente',
+      toast.error(
+        'Erro ao atualizar.',
       );
     }
   }
   
+  const filteredPatients =
+    patients.filter((patient) =>
+      patient.name
+        .toLowerCase()
+        .includes(
+          search.toLowerCase(),
+    ),
+  );
 
   useEffect(() => {
     loadPatients();
@@ -125,139 +148,178 @@ export function PatientsPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-slate-800">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-slate-800">
           Pacientes
         </h1>
 
-        <button
-            onClick={() =>
-                setIsModalOpen(true)
+        <div className="flex gap-3">
+          <Input
+            placeholder="Buscar paciente..."
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
             }
-            className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
-            >
-            Novo paciente
-        </button>
-      </div>
+            className="w-64"
+          />
 
-      <div className="space-y-4">
-        {patients.map((patient) => (
-          
-          <div
-            key={patient.id}
-            className="flex items-center justify-between rounded-2xl bg-white p-5 shadow"
+          <Button
+            onClick={() => {
+              setEditingPatientId(null);
+
+              setName('');
+
+              setEmail('');
+
+              setPhone('');
+
+              setIsModalOpen(true);
+            }}
           >
-            <div>
-              <strong className="block text-lg text-slate-800">
-                {patient.name}
-              </strong>
-
-              <span className="text-sm text-slate-500">
-                {patient.email}
-              </span>
-            </div>
-
-            <span className="text-slate-600">
-              {patient.phone}
-            </span>
-            <div className="flex gap-3">
-            <button
-              onClick={() =>
-                handleOpenEdit(patient)
-              }
-              className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Editar
-            </button>
-
-            <button
-              onClick={() =>
-                handleDeletePatient(
-                  patient.id,
-                )
-              }
-              className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Excluir
-            </button>
-          </div>
-
-
-          </div>
-          
-        ))}
+            Novo paciente
+          </Button>
+        </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="mb-6 text-2xl font-bold text-slate-800">
-                {editingPatientId
-                  ? 'Editar paciente'
-                  : 'Novo paciente'
-                }
-            </h2>
+      <Table
+        headers={[
+          'Nome',
+          'Email',
+          'Telefone',
+          'Ações',
+        ]}
+      >
+        {filteredPatients
+          .filter((patient) =>
+            patient.name
+              .toLowerCase()
+              .includes(
+                search.toLowerCase(),
+              ),
+          )
+          .map((patient) => (
+            <tr
+              key={patient.id}
+              className="border-t"
+            >
+              <td className="p-4">
+                {patient.name}
+              </td>
 
-            <div className="space-y-4">
-                <input
-                type="text"
-                placeholder="Nome"
-                value={name}
-                onChange={(e) =>
-                    setName(e.target.value)
-                }
-                className="w-full rounded-lg border border-slate-300 p-3 outline-none focus:border-blue-500"
-                />
+              <td className="p-4">
+                {patient.email}
+              </td>
 
-                <input
-                type="email"
-                placeholder="E-mail"
-                value={email}
-                onChange={(e) =>
-                    setEmail(e.target.value)
-                }
-                className="w-full rounded-lg border border-slate-300 p-3 outline-none focus:border-blue-500"
-                />
+              <td className="p-4">
+                {patient.phone}
+              </td>
 
-                <input
-                type="text"
-                placeholder="Telefone"
-                value={phone}
-                onChange={(e) =>
-                    setPhone(e.target.value)
-                }
-                className="w-full rounded-lg border border-slate-300 p-3 outline-none focus:border-blue-500"
-                />
-
-                <div className="flex justify-end gap-3">
-                <button
-                    onClick={() =>
-                    setIsModalOpen(false)
-                    }
-                    className="rounded-lg bg-slate-200 px-4 py-2"
+              <td className="flex gap-2 p-4">
+                <Button
+                  onClick={() =>
+                    handleOpenEdit(
+                      patient
+                    )
+                  }
                 >
-                    Cancelar
-                </button>
+                  Editar
+                </Button>
 
-                <button
-                    onClick={() => {
-                      if (editingPatientId) {
-                        handleUpdatePatient();
-
-                        return;
-                      }
-
-                      handleCreatePatient();
-                    }}
-                    className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white"
+                <Button
+                  onClick={() =>
+                    handleDeletePatient(
+                      patient.id,
+                    )
+                  }
+                  className="bg-red-500 hover:bg-red-600"
                 >
-                    Salvar
-                </button>
-                </div>
-            </div>
-            </div>
+                  Excluir
+                </Button>
+              </td>
+            </tr>
+          ))}
+
+          {filteredPatients.length ===
+            0 && (
+            <tr>
+              <td
+                colSpan={4}
+                className="p-8 text-center text-slate-500"
+              >
+                Nenhum paciente encontrado
+              </td>
+            </tr>
+          )}
+      </Table>
+
+      <Modal
+        title={
+          editingPatientId
+            ? 'Editar paciente'
+            : 'Novo paciente'
+        }
+        isOpen={isModalOpen}
+        onClose={() =>
+          setIsModalOpen(false)
+        }
+      >
+        <div className="space-y-4">
+          <Input
+            type="text"
+            placeholder="Nome"
+            value={name}
+            onChange={(e) =>
+              setName(e.target.value)
+            }
+          />
+
+          <Input
+            type="email"
+            placeholder="E-mail"
+            value={email}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
+          />
+
+          <Input
+            type="text"
+            placeholder="Telefone"
+            value={phone}
+            onChange={(e) =>
+              setPhone(e.target.value)
+            }
+          />
+
+          <div className="flex justify-end gap-3">
+            <Button
+              onClick={() =>
+                setIsModalOpen(false)
+              }
+              className="bg-slate-300 text-slate-800 hover:bg-slate-400"
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              disabled={isLoading}
+              onClick={() => {
+                if (editingPatientId) {
+                  handleUpdatePatient();
+
+                  return;
+                }
+
+                handleCreatePatient();
+              }}
+            >
+              {isLoading
+                ? 'Salvando...'
+                : 'Salvar'}
+            </Button>
+          </div>
         </div>
-        )}
+      </Modal>
     </div>
   );
 }
