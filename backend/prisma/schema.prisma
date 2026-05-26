@@ -29,21 +29,13 @@ enum UserRole {
 }
 
 model Patient {
-  id             String        @id @default(uuid())
+  id          String   @id @default(uuid())
+  name        String
+  email       String
+  phone       String?
+  createdAt   DateTime @default(now())
 
-  name           String
-  email          String?
-  phone          String?
-  cpf            String?       @unique
-
-  birthDate      DateTime?
-
-  notes          String?
-
-  appointments   Appointment[]
-
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  appointments Appointment[]
 }
 
 model Appointment {
@@ -55,6 +47,8 @@ model Appointment {
   date DateTime
 
   status AppointmentStatus @default(SCHEDULED)
+
+  type AppointmentType @default(CONSULTATION)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -15,12 +15,56 @@ export class PatientsService {
     });
   }
 
-  findAll() {
-    return this.prisma.patient.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+  async findAll(
+    page: number,
+    limit: number,
+    search: string,
+  ) {
+    const skip =
+      (page - 1) * limit;
+
+    const [patients, total] =
+      await Promise.all([
+        this.prisma.patient.findMany({
+          skip,
+
+          take: limit,
+
+          where: {
+            name: {
+              contains: search,
+
+              mode: 'insensitive',
+            },
+          },
+
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+
+        this.prisma.patient.count({
+          where: {
+            name: {
+              contains: search,
+
+              mode: 'insensitive',
+            },
+          },
+        }),
+      ]);
+
+    return {
+      data: patients,
+
+      total,
+
+      page,
+
+      lastPage: Math.ceil(
+        total / limit,
+      ),
+    };
   }
 
   findOne(id: string) {

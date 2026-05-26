@@ -22,16 +22,46 @@ export function PatientsPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [patients, setPatients] = useState<Patient[]>([]);
+    const [patients, setPatients] = useState<any[]>([]);
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const [currentPage, setCurrentPage] =
+    useState(1);
+    const [lastPage, setLastPage] =
+    useState(1);
+
+    const [
+      debouncedSearch,
+      setDebouncedSearch,
+    ] = useState('');
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearch(search);
+      }, 500);
+
+      return () => {
+        clearTimeout(timer);
+      };
+    }, [search]);
+
+  const itemsPerPage = 5;
 
   async function loadPatients() {
     try {
       const response =
-        await api.get('/patients');
+        await api.get(
+          `/patients?page=${currentPage}&limit=5&search=${debouncedSearch}`,
+        );
 
-      setPatients(response.data);
+      setPatients(
+        response.data.data,
+      );
+
+      setLastPage(
+        response.data.lastPage,
+      );
     } catch (error) {
       console.error(error);
     }
@@ -134,17 +164,17 @@ export function PatientsPage() {
   }
   
   const filteredPatients =
-    patients.filter((patient) =>
-      patient.name
-        .toLowerCase()
-        .includes(
-          search.toLowerCase(),
-    ),
+  patients.filter((patient) =>
+    patient.name
+      .toLowerCase()
+      .includes(
+        search.toLowerCase(),
+      ),
   );
 
   useEffect(() => {
     loadPatients();
-  }, []);
+  }, [currentPage, debouncedSearch]);
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
@@ -251,6 +281,37 @@ export function PatientsPage() {
             </tr>
           )}
       </Table>
+
+      <div className="mt-6 flex items-center justify-end gap-3">
+        <Button
+          disabled={currentPage === 1}
+          onClick={() =>
+            setCurrentPage(
+              currentPage - 1,
+            )
+          }
+        >
+          Anterior
+        </Button>
+
+        <span className="text-sm text-slate-600">
+          Página {currentPage} de{' '}
+          {lastPage}
+        </span>
+
+        <Button
+          disabled={
+            currentPage === lastPage
+          }
+          onClick={() =>
+            setCurrentPage(
+              currentPage + 1,
+            )
+          }
+        >
+          Próxima
+        </Button>
+      </div>
 
       <Modal
         title={

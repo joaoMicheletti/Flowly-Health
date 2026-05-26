@@ -1,11 +1,21 @@
 import { useEffect, useState } from 'react';
-
+import { Table } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
 import { api } from '@/services/api';
+import {
+  appointmentStatusLabels,
+  appointmentTypeLabels,
+} from '@/utils/appointment-labels';
+import { StatusBadge } from '@/components/ui/status-badge';
 
 interface Appointment {
   id: string;
 
   date: string;
+
+  type: string;
 
   status: string;
 
@@ -23,25 +33,25 @@ export function AppointmentsPage() {
     useState<Appointment[]>([]);
 
     const [isModalOpen, setIsModalOpen] =
-  useState(false);
+      useState(false);
 
     const [patients, setPatients] =
-    useState<any[]>([]);
+      useState<any[]>([]);
 
     const [users, setUsers] =
-    useState<any[]>([]);
+      useState<any[]>([]);
 
     const [patientId, setPatientId] =
-    useState('');
+      useState('');
 
     const [userId, setUserId] =
-    useState('');
+      useState('');
 
     const [date, setDate] =
-    useState('');
+      useState('');
 
-    const [status, setStatus] =
-    useState('SCHEDULED');
+    const [type, setType] =
+      useState('CONSULTATION');
 
   async function loadAppointments() {
     try {
@@ -54,55 +64,152 @@ export function AppointmentsPage() {
     }
   }
 
-  async function loadAuxiliarData() {
+
+  async function handleCreateAppointment() {
     try {
-        const [patientsResponse, usersResponse] =
-        await Promise.all([
-            api.get('/patients'),
-            api.get('/users'),
-        ]);
+      await api.post(
+        '/appointments',
+        {
+          patientId,
 
-        setPatients(
-        patientsResponse.data,
-        );
+          userId,
 
-        setUsers(usersResponse.data);
+          date: new Date(
+            date,
+          ).toISOString(),
+
+          type,
+        },
+      );
+
+      loadAppointments();
+
+      setIsModalOpen(false);
     } catch (error) {
-        console.error(error);
+      console.error(error);
     }
-    }
+  }
 
-    async function handleCreateAppointment() {
+  async function loadFormData() {
     try {
-        await api.post('/appointments', {
-        patientId,
-        userId,
-        date,
-        status,
-        });
+      const [
+        patientsResponse,
+        usersResponse,
+      ] = await Promise.all([
+        api.get('/patients'),
 
-        setPatientId('');
-        setUserId('');
-        setDate('');
-        setStatus('SCHEDULED');
+        api.get('/users'),
+      ]);
 
-        setIsModalOpen(false);
+      setPatients(
+        patientsResponse.data.data,
+      );
 
-        loadAppointments();
+      setUsers(usersResponse.data);
     } catch (error) {
-        console.error(error);
+      console.error(error);
+    }
+  }
 
-        alert(
-        'Erro ao criar consulta',
-        );
+  async function handleUpdateStatus(
+    id: string,
+    status: string,
+  ) {
+    try {
+      await api.patch(
+        `/appointments/${id}/status`,
+        {
+          status,
+        },
+      );
+
+      loadAppointments();
+    } catch (error) {
+      console.error(error);
     }
+  }
+
+  function renderActions(
+    appointment: Appointment,
+  ) {
+    if (
+      appointment.status ===
+      'SCHEDULED'
+    ) {
+      return (
+        <>
+          <button
+            onClick={() =>
+              handleUpdateStatus(
+                appointment.id,
+                'CONFIRMED',
+              )
+            }
+            className="rounded-lg bg-green-100 px-3 py-1 text-sm text-green-700"
+          >
+            Confirmar
+          </button>
+
+          <button
+            onClick={() =>
+              handleUpdateStatus(
+                appointment.id,
+                'CANCELLED',
+              )
+            }
+            className="rounded-lg bg-red-100 px-3 py-1 text-sm text-red-700"
+          >
+            Cancelar
+          </button>
+        </>
+      );
     }
+
+    if (
+      appointment.status ===
+      'CONFIRMED'
+    ) {
+      return (
+        <>
+          <button
+            onClick={() =>
+              handleUpdateStatus(
+                appointment.id,
+                'COMPLETED',
+              )
+            }
+            className="rounded-lg bg-blue-100 px-3 py-1 text-sm text-blue-700"
+          >
+            Concluir
+          </button>
+
+          <button
+            onClick={() =>
+              handleUpdateStatus(
+                appointment.id,
+                'CANCELLED',
+              )
+            }
+            className="rounded-lg bg-red-100 px-3 py-1 text-sm text-red-700"
+          >
+            Cancelar
+          </button>
+        </>
+      );
+    }
+
+    return (
+      <span className="text-sm text-slate-400">
+        Sem ações
+      </span>
+    );
+  }
 
   useEffect(() => {
     loadAppointments();
 
-    loadAuxiliarData();
-    }, []);
+    loadFormData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">
@@ -111,165 +218,169 @@ export function AppointmentsPage() {
           Consultas
         </h1>
 
-        <button
-            onClick={() =>
-                setIsModalOpen(true)
-            }
-            className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white"
+        <Button
+          onClick={() =>
+            setIsModalOpen(true)
+          }
         >
           Nova consulta
-        </button>
+        </Button>
       </div>
 
-      <div className="space-y-4">
+      <Table
+        headers={[
+          'Paciente',
+          'Responsável',
+          'Tipo',
+          'Status',
+          'Data',
+        ]}
+      >
         {appointments.map(
           (appointment) => (
-            <div
+            <tr
               key={appointment.id}
-              className="flex items-center justify-between rounded-2xl bg-white p-5 shadow"
+              className="border-t"
             >
-              <div>
-                <strong className="block text-lg text-slate-800">
-                  {
-                    appointment.patient
-                      .name
-                  }
-                </strong>
+              <td className="p-4">
+                {
+                  appointment.patient
+                    .name
+                }
+              </td>
 
-                <span className="text-sm text-slate-500">
-                  {
-                    appointment.user
-                      .name
-                  }
-                </span>
-              </div>
+              <td className="p-4">
+                {
+                  appointment.user.name
+                }
+              </td>
 
-              <div className="text-right">
-                <strong className="block text-slate-800">
-                  {new Date(
-                    appointment.date,
-                  ).toLocaleString()}
-                </strong>
+              <td className="p-4">
+                {
+                  appointmentTypeLabels[
+                    appointment.type as keyof typeof appointmentTypeLabels
+                  ]
+                }
+              </td>
 
-                <span className="text-sm text-blue-600">
-                  {
-                    appointment.status
-                  }
-                </span>
-              </div>
-            </div>
+              <td className="p-4">
+                <StatusBadge
+                  status={appointment.status}
+                />
+              </td>
+
+              <td className="p-4">
+                {new Date(
+                  appointment.date,
+                ).toLocaleString(
+                  'pt-BR',
+                )}
+              </td>
+              <td className="p-4">
+                <div className="flex gap-2">
+                  {renderActions(
+                    appointment,
+                  )}
+                </div>
+              </td>
+            </tr>
           ),
         )}
-      </div>
+      </Table>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="mb-6 text-2xl font-bold text-slate-800">
-                Nova consulta
-            </h2>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() =>
+          setIsModalOpen(false)
+        }
+        title="Nova consulta"
+      >
+        <div className="space-y-4">
+          <select
+            value={patientId}
+            onChange={(e) =>
+              setPatientId(
+                e.target.value,
+              )
+            }
+            className="w-full rounded-lg border border-slate-300 p-3"
+          >
+            <option value="">
+              Selecione paciente
+            </option>
 
-            <div className="space-y-4">
-                <select
-                value={patientId}
-                onChange={(e) =>
-                    setPatientId(
-                    e.target.value,
-                    )
-                }
-                className="w-full rounded-lg border border-slate-300 p-3"
-                >
-                <option value="">
-                    Selecione paciente
-                </option>
+            {patients.map((patient) => (
+              <option
+                key={patient.id}
+                value={patient.id}
+              >
+                {patient.name}
+              </option>
+            ))}
+          </select>
 
-                {patients.map((patient) => (
-                    <option
-                    key={patient.id}
-                    value={patient.id}
-                    >
-                    {patient.name}
-                    </option>
-                ))}
-                </select>
+          <select
+            value={userId}
+            onChange={(e) =>
+              setUserId(
+                e.target.value,
+              )
+            }
+            className="w-full rounded-lg border border-slate-300 p-3"
+          >
+            <option value="">
+              Selecione usuário
+            </option>
 
-                <select
-                value={userId}
-                onChange={(e) =>
-                    setUserId(
-                    e.target.value,
-                    )
-                }
-                className="w-full rounded-lg border border-slate-300 p-3"
-                >
-                <option value="">
-                    Selecione profissional
-                </option>
+            {users.map((user) => (
+              <option
+                key={user.id}
+                value={user.id}
+              >
+                {user.name}
+              </option>
+            ))}
+          </select>
 
-                {users.map((user) => (
-                    <option
-                    key={user.id}
-                    value={user.id}
-                    >
-                    {user.name}
-                    </option>
-                ))}
-                </select>
+          <select
+            value={type}
+            onChange={(e) =>
+              setType(
+                e.target.value,
+              )
+            }
+            className="w-full rounded-lg border border-slate-300 p-3"
+          >
+            <option value="CONSULTATION">
+              Consulta
+            </option>
 
-                <input
-                type="datetime-local"
-                value={date}
-                onChange={(e) =>
-                    setDate(e.target.value)
-                }
-                className="w-full rounded-lg border border-slate-300 p-3"
-                />
+            <option value="RETURN">
+              Retorno
+            </option>
 
-                <select
-                value={status}
-                onChange={(e) =>
-                    setStatus(
-                    e.target.value,
-                    )
-                }
-                className="w-full rounded-lg border border-slate-300 p-3"
-                >
-                <option value="SCHEDULED">
-                    Agendada
-                </option>
+            <option value="EVALUATION">
+              Avaliação
+            </option>
+          </select>
 
-                <option value="CONFIRMED">
-                    Confirmada
-                </option>
+          <Input
+            type="datetime-local"
+            value={date}
+            onChange={(e) =>
+              setDate(e.target.value)
+            }
+          />
 
-                <option value="CANCELLED">
-                    Cancelada
-                </option>
-                </select>
-
-                <div className="flex justify-end gap-3">
-                <button
-                    onClick={() =>
-                    setIsModalOpen(false)
-                    }
-                    className="rounded-lg bg-slate-200 px-4 py-2"
-                >
-                    Cancelar
-                </button>
-
-                <button
-                    onClick={
-                    handleCreateAppointment
-                    }
-                    className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white"
-                >
-                    Salvar
-                </button>
-                </div>
-            </div>
-            </div>
+          <Button
+            onClick={
+              handleCreateAppointment
+            }
+          >
+            Salvar
+          </Button>
         </div>
-        )}
+      </Modal>
     </div>
   );
 }

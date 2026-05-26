@@ -45,7 +45,7 @@ export function DashboardPage() {
         );
 
       setPatientsCount(
-        patientsResponse.data.length,
+        patientsResponse.data.total,
       );
 
       setAppointmentsCount(

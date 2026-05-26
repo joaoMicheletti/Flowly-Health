@@ -2,11 +2,12 @@ import {
   Body,
   Controller,
   Delete,
-  Get,
   Param,
   Patch,
   Post,
   UseGuards,
+  Get,
+  Query,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -29,8 +30,18 @@ export class PatientsController {
   }
 
   @Get()
-  findAll() {
-    return this.patientsService.findAll();
+  findAll(
+    @Query('page') page = '1',
+
+    @Query('limit') limit = '5',
+
+    @Query('search') search = '',
+  ) {
+    return this.patientsService.findAll(
+      Number(page),
+      Number(limit),
+      search,
+    );
   }
 
   @Get(':id')

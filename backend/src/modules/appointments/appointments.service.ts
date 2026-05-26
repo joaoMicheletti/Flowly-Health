@@ -4,19 +4,19 @@ import { PrismaService } from '@/prisma/prisma.service';
 
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import {
+  AppointmentStatus,
+} from '@prisma/client';
 
 @Injectable()
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
 
-  create(data: CreateAppointmentDto) {
+  async create(
+    data: CreateAppointmentDto,
+  ) {
     return this.prisma.appointment.create({
-      data: {
-        ...data,
-
-        date: new Date(data.date),
-      },
-
+      data,
       include: {
         patient: true,
         user: true,
@@ -24,7 +24,7 @@ export class AppointmentsService {
     });
   }
 
-  findAll() {
+  async findAll() {
     return this.prisma.appointment.findMany({
       include: {
         patient: true,
@@ -79,6 +79,21 @@ export class AppointmentsService {
     return this.prisma.appointment.delete({
       where: {
         id,
+      },
+    });
+  }
+
+  async updateStatus(
+    id: string,
+    status: AppointmentStatus,
+  ) {
+    return this.prisma.appointment.update({
+      where: {
+        id,
+      },
+
+      data: {
+        status,
       },
     });
   }

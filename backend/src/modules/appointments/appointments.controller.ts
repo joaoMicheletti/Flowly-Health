@@ -9,6 +9,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import {
+  AppointmentStatus,
+} from '@prisma/client';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -50,5 +54,18 @@ export class AppointmentsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.appointmentsService.remove(id);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+
+    @Body('status')
+    status: AppointmentStatus,
+  ) {
+    return this.appointmentsService.updateStatus(
+      id,
+      status,
+    );
   }
 }
