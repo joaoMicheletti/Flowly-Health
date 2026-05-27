@@ -68,4 +68,17 @@ export class AppointmentsController {
       status,
     );
   }
+
+  @Patch(':id')
+  updateDate(
+    @Param('id') id: string,
+
+    @Body('date')
+    date: Date,
+  ) {
+    return this.appointmentsService.updateDate(
+      id,
+      date,
+    );
+  }
 }

@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Table } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Modal } from '@/components/ui/modal';
-import { Input } from '@/components/ui/input';
-import { api } from '@/services/api';
+
+import moment from 'moment';
+
 import {
-  appointmentStatusLabels,
-  appointmentTypeLabels,
-} from '@/utils/appointment-labels';
-import { StatusBadge } from '@/components/ui/status-badge';
+  Calendar,
+  momentLocalizer,
+} from 'react-big-calendar';
+
+
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+
+import { Button } from '@/components/ui/button';
+
+import { Modal } from '@/components/ui/modal';
+
+import { Input } from '@/components/ui/input';
+
+import { api } from '@/services/api';
+
+import { appointmentTypeLabels } from '@/utils/appointment-labels';
 
 interface Appointment {
   id: string;
@@ -28,30 +39,48 @@ interface Appointment {
   };
 }
 
+interface CalendarEvent {
+  title: string;
+
+  start: Date;
+
+  end: Date;
+
+  resource: Appointment;
+}
+
+const localizer =
+  momentLocalizer(moment);
+
+
+
 export function AppointmentsPage() {
   const [appointments, setAppointments] =
     useState<Appointment[]>([]);
 
-    const [isModalOpen, setIsModalOpen] =
-      useState(false);
+  const [isModalOpen, setIsModalOpen] =
+    useState(false);
 
-    const [patients, setPatients] =
-      useState<any[]>([]);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
 
-    const [users, setUsers] =
-      useState<any[]>([]);
+  const [patients, setPatients] =
+    useState<any[]>([]);
 
-    const [patientId, setPatientId] =
-      useState('');
+  const [users, setUsers] =
+    useState<any[]>([]);
 
-    const [userId, setUserId] =
-      useState('');
+  const [patientId, setPatientId] =
+    useState('');
 
-    const [date, setDate] =
-      useState('');
+  const [userId, setUserId] =
+    useState('');
 
-    const [type, setType] =
-      useState('CONSULTATION');
+  const [date, setDate] =
+    useState('');
+
+  const [type, setType] =
+    useState('CONSULTATION');
 
   async function loadAppointments() {
     try {
@@ -59,32 +88,6 @@ export function AppointmentsPage() {
         await api.get('/appointments');
 
       setAppointments(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-
-  async function handleCreateAppointment() {
-    try {
-      await api.post(
-        '/appointments',
-        {
-          patientId,
-
-          userId,
-
-          date: new Date(
-            date,
-          ).toISOString(),
-
-          type,
-        },
-      );
-
-      loadAppointments();
-
-      setIsModalOpen(false);
     } catch (error) {
       console.error(error);
     }
@@ -111,6 +114,37 @@ export function AppointmentsPage() {
     }
   }
 
+  async function handleCreateAppointment() {
+    try {
+      await api.post(
+        '/appointments',
+        {
+          patientId,
+          userId,
+
+          date:
+            new Date(date).toISOString(),
+
+          type,
+        },
+      );
+
+      await loadAppointments();
+
+      setIsModalOpen(false);
+
+      setPatientId('');
+
+      setUserId('');
+
+      setDate('');
+
+      setType('CONSULTATION');
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   async function handleUpdateStatus(
     id: string,
     status: string,
@@ -123,87 +157,113 @@ export function AppointmentsPage() {
         },
       );
 
-      loadAppointments();
+      await loadAppointments();
     } catch (error) {
       console.error(error);
     }
   }
 
-  function renderActions(
-    appointment: Appointment,
+  async function handleStatusAction(
+    status: string,
   ) {
-    if (
-      appointment.status ===
-      'SCHEDULED'
-    ) {
-      return (
-        <>
-          <button
-            onClick={() =>
-              handleUpdateStatus(
-                appointment.id,
-                'CONFIRMED',
-              )
-            }
-            className="rounded-lg bg-green-100 px-3 py-1 text-sm text-green-700"
-          >
-            Confirmar
-          </button>
-
-          <button
-            onClick={() =>
-              handleUpdateStatus(
-                appointment.id,
-                'CANCELLED',
-              )
-            }
-            className="rounded-lg bg-red-100 px-3 py-1 text-sm text-red-700"
-          >
-            Cancelar
-          </button>
-        </>
-      );
+    if (!selectedAppointment) {
+      return;
     }
 
-    if (
-      appointment.status ===
-      'CONFIRMED'
-    ) {
-      return (
-        <>
-          <button
-            onClick={() =>
-              handleUpdateStatus(
-                appointment.id,
-                'COMPLETED',
-              )
-            }
-            className="rounded-lg bg-blue-100 px-3 py-1 text-sm text-blue-700"
-          >
-            Concluir
-          </button>
-
-          <button
-            onClick={() =>
-              handleUpdateStatus(
-                appointment.id,
-                'CANCELLED',
-              )
-            }
-            className="rounded-lg bg-red-100 px-3 py-1 text-sm text-red-700"
-          >
-            Cancelar
-          </button>
-        </>
-      );
-    }
-
-    return (
-      <span className="text-sm text-slate-400">
-        Sem ações
-      </span>
+    await handleUpdateStatus(
+      selectedAppointment.id,
+      status,
     );
+
+    setSelectedAppointment(null);
   }
+
+  async function moveAppointment({
+    event,
+    start,
+  }: any) {
+    try {
+      await api.patch(
+        `/appointments/${event.resource.id}`,
+        {
+          date:
+            start.toISOString(),
+        },
+      );
+
+      await loadAppointments();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function eventStyleGetter(
+    event: CalendarEvent,
+  ) {
+    const status =
+      event.resource.status;
+
+    const styles = {
+      SCHEDULED: {
+        backgroundColor: '#facc15',
+        color: '#000',
+        borderRadius: '8px',
+        border: 'none',
+      },
+
+      CONFIRMED: {
+        backgroundColor: '#22c55e',
+        color: '#fff',
+        borderRadius: '8px',
+        border: 'none',
+      },
+
+      CANCELLED: {
+        backgroundColor: '#ef4444',
+        color: '#fff',
+        borderRadius: '8px',
+        border: 'none',
+      },
+
+      COMPLETED: {
+        backgroundColor: '#3b82f6',
+        color: '#fff',
+        borderRadius: '8px',
+        border: 'none',
+      },
+    };
+
+    return {
+      style:
+        styles[
+          status as keyof typeof styles
+        ],
+    };
+  }
+
+  const calendarEvents: CalendarEvent[] =
+    appointments.map(
+      (appointment) => ({
+        title: `${appointment.patient.name} - ${
+          appointmentTypeLabels[
+            appointment.type as keyof typeof appointmentTypeLabels
+          ]
+        }`,
+
+        start: new Date(
+          appointment.date,
+        ),
+
+        end: new Date(
+          new Date(
+            appointment.date,
+          ).getTime() +
+            60 * 60 * 1000,
+        ),
+
+        resource: appointment,
+      }),
+    );
 
   useEffect(() => {
     loadAppointments();
@@ -227,66 +287,42 @@ export function AppointmentsPage() {
         </Button>
       </div>
 
-      <Table
-        headers={[
-          'Paciente',
-          'Responsável',
-          'Tipo',
-          'Status',
-          'Data',
-        ]}
-      >
-        {appointments.map(
-          (appointment) => (
-            <tr
-              key={appointment.id}
-              className="border-t"
-            >
-              <td className="p-4">
-                {
-                  appointment.patient
-                    .name
-                }
-              </td>
-
-              <td className="p-4">
-                {
-                  appointment.user.name
-                }
-              </td>
-
-              <td className="p-4">
-                {
-                  appointmentTypeLabels[
-                    appointment.type as keyof typeof appointmentTypeLabels
-                  ]
-                }
-              </td>
-
-              <td className="p-4">
-                <StatusBadge
-                  status={appointment.status}
-                />
-              </td>
-
-              <td className="p-4">
-                {new Date(
-                  appointment.date,
-                ).toLocaleString(
-                  'pt-BR',
-                )}
-              </td>
-              <td className="p-4">
-                <div className="flex gap-2">
-                  {renderActions(
-                    appointment,
-                  )}
-                </div>
-              </td>
-            </tr>
-          ),
-        )}
-      </Table>
+      <div className="rounded-2xl bg-white p-4 shadow-sm">
+        <Calendar
+          localizer={localizer}
+          events={calendarEvents}
+          startAccessor="start"
+          endAccessor="end"
+          selectable
+          popup
+          onSelectEvent={(event: any) =>
+            setSelectedAppointment(
+              event.resource,
+            )
+          }
+          eventPropGetter={
+            eventStyleGetter
+          }
+          views={[
+            'month',
+            'week',
+            'day',
+            'agenda',
+          ]}
+          style={{
+            height: 700,
+          }}
+          messages={{
+            next: 'Próximo',
+            previous: 'Anterior',
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            day: 'Dia',
+            agenda: 'Agenda',
+          }}
+        />
+      </div>
 
       <Modal
         isOpen={isModalOpen}
@@ -380,6 +416,132 @@ export function AppointmentsPage() {
             Salvar
           </Button>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={
+          !!selectedAppointment
+        }
+        onClose={() =>
+          setSelectedAppointment(null)
+        }
+        title="Detalhes da consulta"
+      >
+        {selectedAppointment && (
+          <div className="space-y-4">
+            <div>
+              <strong>
+                Paciente:
+              </strong>
+
+              <p>
+                {
+                  selectedAppointment
+                    .patient.name
+                }
+              </p>
+            </div>
+
+            <div>
+              <strong>
+                Responsável:
+              </strong>
+
+              <p>
+                {
+                  selectedAppointment
+                    .user.name
+                }
+              </p>
+            </div>
+
+            <div>
+              <strong>Tipo:</strong>
+
+              <p>
+                {
+                  appointmentTypeLabels[
+                    selectedAppointment.type as keyof typeof appointmentTypeLabels
+                  ]
+                }
+              </p>
+            </div>
+
+            <div>
+              <strong>Status:</strong>
+
+              <p>
+                {
+                  selectedAppointment.status
+                }
+              </p>
+            </div>
+
+            <div>
+              <strong>Data:</strong>
+
+              <p>
+                {new Date(
+                  selectedAppointment.date,
+                ).toLocaleString(
+                  'pt-BR',
+                )}
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              {selectedAppointment.status ===
+                'SCHEDULED' && (
+                <>
+                  <Button
+                    onClick={() =>
+                      handleStatusAction(
+                        'CONFIRMED',
+                      )
+                    }
+                  >
+                    Confirmar
+                  </Button>
+
+                  <Button
+                    onClick={() =>
+                      handleStatusAction(
+                        'CANCELLED',
+                      )
+                    }
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+
+              {selectedAppointment.status ===
+                'CONFIRMED' && (
+                <>
+                  <Button
+                    onClick={() =>
+                      handleStatusAction(
+                        'COMPLETED',
+                      )
+                    }
+                  >
+                    Concluir
+                  </Button>
+
+                  <Button
+                    onClick={() =>
+                      handleStatusAction(
+                        'CANCELLED',
+                      )
+                    }
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

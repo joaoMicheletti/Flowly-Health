@@ -97,4 +97,19 @@ export class AppointmentsService {
       },
     });
   }
+
+  async updateDate(
+    id: string,
+    date: Date,
+  ) {
+    return this.prisma.appointment.update({
+      where: {
+        id,
+      },
+
+      data: {
+        date,
+      },
+    });
+  }
 }
