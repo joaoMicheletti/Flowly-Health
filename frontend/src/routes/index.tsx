@@ -16,6 +16,8 @@ import { PatientsPage } from '@/pages/patients';
 
 import { ProtectedRoute } from './protected-route';
 
+import {UsersPage} from '@/pages/users';
+
 export function AppRoutes() {
   return (
     <BrowserRouter>
@@ -42,6 +44,11 @@ export function AppRoutes() {
             <Route
               path="/appointments"
               element={<AppointmentsPage />}
+            />
+
+            <Route
+              path="/users"
+              element={<UsersPage />}
             />
           </Route>
         </Route>

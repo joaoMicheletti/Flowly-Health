@@ -19,6 +19,9 @@ export class DashboardService {
 
     const patients =
       await this.prisma.patient.count();
+    
+    const appointments =
+      await this.prisma.appointment.count();
 
     const appointmentsToday =
       await this.prisma.appointment.count({
@@ -59,11 +62,9 @@ export class DashboardService {
 
     return {
       patients,
-
+      appointments,
       appointmentsToday,
-
       confirmedAppointments,
-
       nextAppointments,
     };
   }

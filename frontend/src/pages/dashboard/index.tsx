@@ -4,11 +4,10 @@ import { Card } from '@/components/ui/card';
 
 import { api } from '@/services/api';
 
-
-
-
 interface DashboardData {
   patients: number;
+
+  appointments: number;
 
   appointmentsToday: number;
 
@@ -22,34 +21,26 @@ interface DashboardData {
     patient: {
       name: string;
     };
+
+    user: {
+      name: string;
+    };
   }[];
 }
 
 export function DashboardPage() {
-  const [patientsCount, setPatientsCount] =
-  useState(0);
-
-  const [
-    appointmentsCount,
-    setAppointmentsCount,
-  ] = useState(0);
+  const [dashboard, setDashboard] =
+    useState<DashboardData | null>(
+      null,
+    );
 
   async function loadDashboard() {
     try {
-      const patientsResponse =
-        await api.get('/patients');
+      const response =
+        await api.get('/dashboard');
 
-      const appointmentsResponse =
-        await api.get(
-          '/appointments',
-        );
-
-      setPatientsCount(
-        patientsResponse.data.total,
-      );
-
-      setAppointmentsCount(
-        appointmentsResponse.data.length,
+      setDashboard(
+        response.data,
       );
     } catch (error) {
       console.error(error);
@@ -60,31 +51,101 @@ export function DashboardPage() {
     loadDashboard();
   }, []);
 
-
-
-
+  if (!dashboard) {
+    return (
+      <p>Carregando...</p>
+    );
+  }
 
   return (
-    <div>
-      <h1 className="mb-8 text-3xl font-bold text-slate-800">
+    <div className="space-y-8">
+      <h1 className="text-3xl font-bold text-slate-800">
         Dashboard
       </h1>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <Card
           title="Pacientes"
-          value={patientsCount}
+          value={
+            dashboard.patients
+          }
         />
 
         <Card
           title="Consultas"
-          value={appointmentsCount}
+          value={
+            dashboard.appointments
+          }
         />
 
         <Card
           title="Hoje"
-          value="0"
+          value={
+            dashboard.appointmentsToday
+          }
         />
+
+        <Card
+          title="Confirmadas"
+          value={
+            dashboard.confirmedAppointments
+          }
+        />
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-xl font-bold">
+          Próximas consultas
+        </h2>
+
+        {dashboard
+          .nextAppointments
+          .length === 0 ? (
+          <p className="text-slate-500">
+            Nenhuma consulta agendada.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {dashboard.nextAppointments.map(
+              (
+                appointment,
+              ) => (
+                <div
+                  key={
+                    appointment.id
+                  }
+                  className="flex items-center justify-between rounded-lg border p-4"
+                >
+                  <div>
+                    <p className="font-semibold">
+                      {
+                        appointment
+                          .patient
+                          .name
+                      }
+                    </p>
+
+                    <p className="text-sm text-slate-500">
+                      {
+                        appointment
+                          .user
+                          .name
+                      }
+                    </p>
+                  </div>
+
+                  <p>
+                    {new Date(
+                      appointment.date,
+                    ).toLocaleString(
+                      'pt-BR',
+                    )}
+                  </p>
+                </div>
+              ),
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

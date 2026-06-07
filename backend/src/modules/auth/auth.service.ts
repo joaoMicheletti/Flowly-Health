@@ -38,6 +38,7 @@ export class AuthService {
       name: data.name,
       email: data.email,
       password: hashedPassword,
+      role: 'RECEPTIONIST',
     });
     console.log('data to database:', user);
 

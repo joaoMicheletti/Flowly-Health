@@ -37,6 +37,7 @@ export class PatientsController {
 
     @Query('search') search = '',
   ) {
+    console.log('aqui');
     return this.patientsService.findAll(
       Number(page),
       Number(limit),

@@ -50,6 +50,7 @@ export function PatientsPage() {
 
   async function loadPatients() {
     try {
+      console.log(`/patients?page=${currentPage}&limit=5&search=${debouncedSearch}`)
       const response =
         await api.get(
           `/patients?page=${currentPage}&limit=5&search=${debouncedSearch}`,

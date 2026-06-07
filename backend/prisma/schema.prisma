@@ -17,6 +17,7 @@ model User {
   role         UserRole      @default(RECEPTIONIST)
 
   appointments Appointment[]
+  medicalRecords MedicalRecord[]
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -36,6 +37,7 @@ model Patient {
   createdAt   DateTime @default(now())
 
   appointments Appointment[]
+  medicalRecords MedicalRecord[]
 }
 
 model Appointment {
@@ -69,4 +71,22 @@ enum AppointmentType {
   CONSULTATION
   RETURN
   EVALUATION
+}
+
+model MedicalRecord {
+  id          String   @id @default(uuid())
+
+  notes       String
+
+  createdAt   DateTime @default(now())
+
+  updatedAt   DateTime @updatedAt
+
+  patientId   String
+
+  patient     Patient  @relation(fields: [patientId], references: [id])
+
+  userId      String
+
+  user        User     @relation(fields: [userId], references: [id])
 }
