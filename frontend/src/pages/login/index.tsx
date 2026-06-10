@@ -29,6 +29,10 @@ export function LoginPage() {
         'token',
         access_token,
       );
+      localStorage.setItem(
+        '@flowly:user',
+        JSON.stringify(response.data.user),
+      );
 
       navigate('/dashboard');
     } catch (error) {

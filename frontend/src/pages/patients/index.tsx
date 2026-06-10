@@ -25,6 +25,20 @@ export function PatientsPage() {
     const [patients, setPatients] = useState<any[]>([]);
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isMedicalRecordModalOpen, setIsMedicalRecordModalOpen] =
+      useState(false);
+
+    const [selectedPatientId, setSelectedPatientId] =
+      useState('');
+
+    const [selectedPatientName, setSelectedPatientName] =
+      useState('');
+
+    const [notes, setNotes] =
+      useState('');
+
+    const [medicalRecords, setMedicalRecords] =
+      useState<any[]>([]);
 
     const [currentPage, setCurrentPage] =
     useState(1);
@@ -173,6 +187,85 @@ export function PatientsPage() {
       ),
   );
 
+  async function loadMedicalRecords(patientId: string,) {
+    try {
+      const response =
+        await api.get(
+          `/medical-records/patient/${patientId}`,
+        );
+
+      setMedicalRecords(
+        response.data,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function openMedicalRecordModal(patient: Patient,) {
+    setSelectedPatientId(
+      patient.id,
+    );
+
+    setSelectedPatientName(
+      patient.name,
+    ); 
+
+    loadMedicalRecords(
+      patient.id,
+    );
+
+    setIsMedicalRecordModalOpen(
+      true,
+    );
+  }
+
+  async function handleCreateMedicalRecord() {
+    console.log(
+      'patientId:',
+      selectedPatientId,
+    );
+
+    const user = JSON.parse(
+      localStorage.getItem(
+        '@flowly:user',
+      ) || '{}',
+    );
+
+    console.log('user:', user);
+
+    console.log('userId:', user.id);
+    try {
+      const user =
+        JSON.parse(
+          localStorage.getItem(
+            '@flowly:user',
+          ) || '{}',
+        );
+
+      await api.post(
+        '/medical-records',
+        {
+          patientId:
+            selectedPatientId,
+
+          userId:
+            user.id,
+
+          notes,
+        },
+      );
+
+      setNotes('');
+
+      await loadMedicalRecords(
+        selectedPatientId,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     loadPatients();
   }, [currentPage, debouncedSearch]);
@@ -254,6 +347,16 @@ export function PatientsPage() {
                   }
                 >
                   Editar
+                </Button>
+
+                <Button
+                  onClick={() =>
+                    openMedicalRecordModal(
+                      patient,
+                    )
+                  }
+                >
+                  Prontuário
                 </Button>
 
                 <Button
@@ -379,6 +482,77 @@ export function PatientsPage() {
                 ? 'Salvando...'
                 : 'Salvar'}
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={
+          isMedicalRecordModalOpen
+        }
+        onClose={() =>
+          setIsMedicalRecordModalOpen(
+            false,
+          )
+        }
+        title={`Prontuário - ${selectedPatientName}`}
+      >
+        <div className="space-y-4">
+
+          <textarea
+            value={notes}
+            onChange={(e) =>
+              setNotes(
+                e.target.value,
+              )
+            }
+            rows={5}
+            className="w-full rounded-lg border border-slate-300 p-3"
+            placeholder="Digite uma observação..."
+          />
+
+          <Button
+            onClick={
+              handleCreateMedicalRecord
+            }
+          >
+            Salvar observação
+          </Button>
+
+          <hr />
+
+          <div className="max-h-80 overflow-y-auto space-y-4">
+            {medicalRecords.map(
+              (record) => (
+                <div
+                  key={record.id}
+                  className="rounded-lg border p-3"
+                >
+                  <div className="mb-2 flex justify-between text-sm text-slate-500">
+                    <span>
+                      {
+                        record.user
+                          ?.name
+                      }
+                    </span>
+
+                    <span>
+                      {new Date(
+                        record.createdAt,
+                      ).toLocaleString(
+                        'pt-BR',
+                      )}
+                    </span>
+                  </div>
+
+                  <p>
+                    {
+                      record.notes
+                    }
+                  </p>
+                </div>
+              ),
+            )}
           </div>
         </div>
       </Modal>
