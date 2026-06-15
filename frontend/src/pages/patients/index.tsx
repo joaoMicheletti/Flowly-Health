@@ -25,30 +25,19 @@ export function PatientsPage() {
     const [patients, setPatients] = useState<any[]>([]);
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isMedicalRecordModalOpen, setIsMedicalRecordModalOpen] =
-      useState(false);
-
-    const [selectedPatientId, setSelectedPatientId] =
-      useState('');
-
-    const [selectedPatientName, setSelectedPatientName] =
-      useState('');
-
-    const [notes, setNotes] =
-      useState('');
-
-    const [medicalRecords, setMedicalRecords] =
-      useState<any[]>([]);
-
-    const [currentPage, setCurrentPage] =
-    useState(1);
-    const [lastPage, setLastPage] =
-    useState(1);
-
-    const [
-      debouncedSearch,
-      setDebouncedSearch,
-    ] = useState('');
+    const [isMedicalRecordModalOpen, setIsMedicalRecordModalOpen] = useState(false);
+    const [selectedPatientId, setSelectedPatientId] = useState('');
+    const [selectedPatientName, setSelectedPatientName] = useState('');
+    const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [lastPage, setLastPage] = useState(1);
+    const [debouncedSearch, setDebouncedSearch,] = useState('');
+    const [  chiefComplaint,  setChiefComplaint,] = useState('');
+    const [  diagnosis,  setDiagnosis,] = useState('');
+    const [  procedurePerformed, setProcedurePerformed,] = useState('');
+    const [prescription, setPrescription,] = useState('');
+    const [returnDate, setReturnDate,] = useState('');
+    const [notes, setNotes,] = useState('');
 
     useEffect(() => {
       const timer = setTimeout(() => {
@@ -259,10 +248,25 @@ export function PatientsPage() {
           userId:
             user.id,
 
+          chiefComplaint,
+
+          diagnosis,
+
+          procedurePerformed,
+
+          prescription,
+
+          returnDate,
+
           notes,
         },
       );
 
+      setChiefComplaint('');
+      setDiagnosis('');
+      setProcedurePerformed('');
+      setPrescription('');
+      setReturnDate('');
       setNotes('');
 
       await loadMedicalRecords(
@@ -506,24 +510,68 @@ export function PatientsPage() {
       >
         <div className="space-y-4">
 
-          <textarea
-            value={notes}
+          <Input
+            placeholder="Queixa Principal"
+            value={chiefComplaint}
             onChange={(e) =>
-              setNotes(
+              setChiefComplaint(e.target.value)
+            }
+          />
+
+          <Input
+            placeholder="Diagnóstico"
+            value={diagnosis}
+            onChange={(e) =>
+              setDiagnosis(e.target.value)
+            }
+          />
+
+          <Input
+            placeholder="Procedimento Realizado"
+            value={procedurePerformed}
+            onChange={(e) =>
+              setProcedurePerformed(
                 e.target.value,
               )
             }
+          />
+
+          <Input
+            placeholder="Prescrição"
+            value={prescription}
+            onChange={(e) =>
+              setPrescription(
+                e.target.value,
+              )
+            }
+          />
+
+          <Input
+            type="date"
+            value={returnDate}
+            onChange={(e) =>
+              setReturnDate(
+                e.target.value,
+              )
+            }
+          />
+
+          <textarea
+            value={notes}
+            onChange={(e) =>
+              setNotes(e.target.value)
+            }
             rows={5}
             className="w-full rounded-lg border border-slate-300 p-3"
-            placeholder="Digite uma observação..."
-          />
+            placeholder="Observações"
+          ></textarea>
 
           <Button
             onClick={
               handleCreateMedicalRecord
             }
           >
-            Salvar observação
+            Salvar Prontuário
           </Button>
 
           <hr />
@@ -558,9 +606,71 @@ export function PatientsPage() {
                     </span>
                   </div>
 
-                  <p className="text-slate-700">
-                    {record.notes}
-                  </p>
+                  <div className="space-y-2 text-sm">
+                    {record.chiefComplaint && (
+                      <p>
+                        <strong>
+                          Queixa:
+                        </strong>{' '}
+                        {
+                          record.chiefComplaint
+                        }
+                      </p>
+                    )}
+
+                    {record.diagnosis && (
+                      <p>
+                        <strong>
+                          Diagnóstico:
+                        </strong>{' '}
+                        {record.diagnosis}
+                      </p>
+                    )}
+
+                    {record.procedurePerformed && (
+                      <p>
+                        <strong>
+                          Procedimento:
+                        </strong>{' '}
+                        {
+                          record.procedurePerformed
+                        }
+                      </p>
+                    )}
+
+                    {record.prescription && (
+                      <p>
+                        <strong>
+                          Prescrição:
+                        </strong>{' '}
+                        {
+                          record.prescription
+                        }
+                      </p>
+                    )}
+
+                    {record.returnDate && (
+                      <p>
+                        <strong>
+                          Retorno:
+                        </strong>{' '}
+                        {new Date(
+                          record.returnDate,
+                        ).toLocaleDateString(
+                          'pt-BR',
+                        )}
+                      </p>
+                    )}
+
+                    {record.notes && (
+                      <p>
+                        <strong>
+                          Observações:
+                        </strong>{' '}
+                        {record.notes}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
           </div>

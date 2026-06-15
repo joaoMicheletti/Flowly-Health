@@ -3,5 +3,15 @@ export class CreateMedicalRecordDto {
 
   userId: string;
 
-  notes: string;
+  chiefComplaint?: string;
+
+  diagnosis?: string;
+
+  procedurePerformed?: string;
+
+  prescription?: string;
+
+  notes?: string;
+
+  returnDate?: string;
 }

@@ -8,19 +8,19 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(uuid())
+  id String @id @default(uuid())
 
-  name         String
-  email        String        @unique
-  password     String
+  name     String
+  email    String @unique
+  password String
 
-  role         UserRole      @default(RECEPTIONIST)
+  role UserRole @default(RECEPTIONIST)
 
-  appointments Appointment[]
+  appointments   Appointment[]
   medicalRecords MedicalRecord[]
 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum UserRole {
@@ -30,13 +30,13 @@ enum UserRole {
 }
 
 model Patient {
-  id          String   @id @default(uuid())
-  name        String
-  email       String
-  phone       String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  createdAt DateTime @default(now())
 
-  appointments Appointment[]
+  appointments   Appointment[]
   medicalRecords MedicalRecord[]
 }
 
@@ -44,7 +44,7 @@ model Appointment {
   id String @id @default(uuid())
 
   patientId String
-  userId String
+  userId    String
 
   date DateTime
 
@@ -74,19 +74,29 @@ enum AppointmentType {
 }
 
 model MedicalRecord {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  notes       String
+  chiefComplaint String?
 
-  createdAt   DateTime @default(now())
+  diagnosis String?
 
-  updatedAt   DateTime @updatedAt
+  procedurePerformed String?
 
-  patientId   String
+  prescription String?
 
-  patient     Patient  @relation(fields: [patientId], references: [id])
+  notes String?
 
-  userId      String
+  returnDate DateTime?
 
-  user        User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  patientId String
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  userId String
+
+  user User @relation(fields: [userId], references: [id])
 }

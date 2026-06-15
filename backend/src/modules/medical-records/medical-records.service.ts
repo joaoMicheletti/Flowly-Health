@@ -14,7 +14,14 @@ export class MedicalRecordsService {
     data: CreateMedicalRecordDto,
   ) {
     return this.prisma.medicalRecord.create({
-      data,
+      data: {
+        ...data,
+
+        returnDate: data.returnDate
+          ? new Date(data.returnDate)
+          : null,
+      },
+
       include: {
         patient: true,
         user: true,

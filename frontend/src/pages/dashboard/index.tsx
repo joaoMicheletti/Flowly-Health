@@ -132,59 +132,6 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="mt-8 rounded-2xl bg-white p-6 shadow">
-        <h2 className="mb-4 text-xl font-bold">
-          Próximas Consultas
-        </h2>
-
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Paciente</th>
-              <th>Médico</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {dashboard?.nextAppointments.map(
-              (
-                appointment,
-              ) => (
-                <tr
-                  key={
-                    appointment.id
-                  }
-                >
-                  <td>
-                    {new Date(
-                      appointment.date,
-                    ).toLocaleString(
-                      'pt-BR',
-                    )}
-                  </td>
-
-                  <td>
-                    {
-                      appointment
-                        .patient
-                        .name
-                    }
-                  </td>
-
-                  <td>
-                    {
-                      appointment.user
-                        .name
-                    }
-                  </td>
-                </tr>
-              ),
-            )}
-          </tbody>
-        </table>
-      </div>
-
       <div className="rounded-2xl bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-xl font-bold">
           Próximas consultas
