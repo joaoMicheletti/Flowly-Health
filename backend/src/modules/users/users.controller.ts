@@ -11,7 +11,15 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
+@UseGuards(
+  JwtAuthGuard,
+  RolesGuard,
+)
 @Controller('users')
 export class UsersController {
   constructor(
@@ -19,11 +27,13 @@ export class UsersController {
   ) {}
 
   @Get()
+  @Roles('ADMIN')
   findAll() {
     return this.usersService.findAll();
   }
 
   @Post()
+  @Roles('ADMIN')
   create(
     @Body()
     data: CreateUserDto,
@@ -32,6 +42,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @Roles('ADMIN')
   findOne(
     @Param('id')
     id: string,
@@ -42,6 +53,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @Roles('ADMIN')
   update(
     @Param('id')
     id: string,
@@ -56,6 +68,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @Roles('ADMIN')
   remove(
     @Param('id')
     id: string,
