@@ -3,6 +3,7 @@ import {
   Users,
   CalendarDays,
   LogOut,
+  UserCog,
 } from 'lucide-react';
 
 import {
@@ -13,16 +14,27 @@ import {
 
 import { useAuth } from '@/contexts/auth-context';
 
+
 export function AppLayout() {
   const navigate = useNavigate();
 
-  const { user, signOut } =
-    useAuth();
+  const { user, signOut } = useAuth();
+
+  console.log('USER SIDEBAR:', user);
+  console.log('ROLE SIDEBAR:', user?.role);
 
   function handleLogout() {
     signOut();
 
     navigate('/');
+  }
+
+  if (!user) {
+    return (
+      <div>
+        Carregando usuário...
+      </div>
+    );
   }
 
   return (
@@ -65,6 +77,16 @@ export function AppLayout() {
 
             Consultas
           </Link>
+
+          {user && user.role === 'ADMIN' && (
+            <Link
+              to="/users"
+              className="flex items-center gap-3 rounded-xl p-3 transition hover:bg-slate-800"
+            >
+              <Users size={20} />
+              Usuários
+            </Link>
+          )}
 
           <button
             onClick={handleLogout}

@@ -6,6 +6,14 @@ import { Input } from '@/components/ui/input';
 
 import { api } from '@/services/api';
 
+import {
+  Navigate,
+} from 'react-router-dom';
+
+import {
+  isAdmin,
+} from '@/utils/permissions';
+
 interface User {
   id: string;
   name: string;
@@ -14,6 +22,15 @@ interface User {
 }
 
 export function UsersPage() {
+
+  if (!isAdmin()) {
+    return (
+      <Navigate
+        to="/dashboard"
+      />
+    );
+  }
+
   const [users, setUsers] =
     useState<User[]>([]);
 

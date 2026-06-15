@@ -6,6 +6,8 @@ import { PrismaService } from '@/prisma/prisma.service';
 
 import { BadRequestException } from '@nestjs/common';
 
+import * as bcrypt from 'bcrypt';
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -24,8 +26,17 @@ export class UsersService {
     password: string;
     role: UserRole;
   }) {
+    const hashedPassword =
+    await bcrypt.hash(
+      data.password,
+      10,
+    );
     return this.prisma.user.create({
-      data,
+      data: {
+        ...data,
+        password: hashedPassword,
+      },
+
       select: {
         id: true,
         name: true,
@@ -41,6 +52,13 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: {
         id,
+      },
+
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
       },
     });
   }

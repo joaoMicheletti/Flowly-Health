@@ -31,13 +31,10 @@ export class AuthService {
       throw new BadRequestException('User already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    console.log("cript Password:", hashedPassword);
-
     const user = await this.usersService.create({
       name: data.name,
       email: data.email,
-      password: hashedPassword,
+      password: data.password,
       role: 'RECEPTIONIST',
     });
     console.log('data to database:', user);

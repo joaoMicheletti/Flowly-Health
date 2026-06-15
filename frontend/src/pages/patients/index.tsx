@@ -187,20 +187,27 @@ export function PatientsPage() {
       ),
   );
 
-  async function loadMedicalRecords(patientId: string,) {
-    try {
-      const response =
-        await api.get(
-          `/medical-records/patient/${patientId}`,
+  async function loadMedicalRecords(
+      patientId: string,
+    ) {
+      try {
+        const response =
+          await api.get(
+            `/medical-records/patient/${patientId}`,
+          );
+
+        console.log(
+          'medical records:',
+          response.data,
         );
 
-      setMedicalRecords(
-        response.data,
-      );
-    } catch (error) {
-      console.error(error);
+        setMedicalRecords(
+          response.data,
+        );
+      } catch (error) {
+        console.error(error);
+      }
     }
-  }
 
   function openMedicalRecordModal(patient: Patient,) {
     setSelectedPatientId(
@@ -521,22 +528,28 @@ export function PatientsPage() {
 
           <hr />
 
-          <div className="max-h-80 overflow-y-auto space-y-4">
-            {medicalRecords.map(
-              (record) => (
+          <div className="space-y-3">
+            {medicalRecords
+              .sort(
+                (a, b) =>
+                  new Date(
+                    b.createdAt,
+                  ).getTime() -
+                  new Date(
+                    a.createdAt,
+                  ).getTime(),
+              )
+              .map((record) => (
                 <div
                   key={record.id}
-                  className="rounded-lg border p-3"
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="mb-2 flex justify-between text-sm text-slate-500">
-                    <span>
-                      {
-                        record.user
-                          ?.name
-                      }
+                  <div className="mb-2 flex justify-between">
+                    <span className="font-semibold text-slate-700">
+                      {record.user?.name}
                     </span>
 
-                    <span>
+                    <span className="text-sm text-slate-500">
                       {new Date(
                         record.createdAt,
                       ).toLocaleString(
@@ -545,14 +558,11 @@ export function PatientsPage() {
                     </span>
                   </div>
 
-                  <p>
-                    {
-                      record.notes
-                    }
+                  <p className="text-slate-700">
+                    {record.notes}
                   </p>
                 </div>
-              ),
-            )}
+              ))}
           </div>
         </div>
       </Modal>

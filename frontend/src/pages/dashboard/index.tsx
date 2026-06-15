@@ -3,15 +3,30 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 
 import { api } from '@/services/api';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from 'recharts';
 
 interface DashboardData {
   patients: number;
 
-  appointments: number;
-
   appointmentsToday: number;
 
+  appointmentsLast7Days: {
+    date: string;
+    _count: {
+      id: number;
+    };
+  }[];
+
   confirmedAppointments: number;
+
+  doctors: number;
 
   nextAppointments: {
     id: string;
@@ -25,6 +40,8 @@ interface DashboardData {
     user: {
       name: string;
     };
+
+    status: string;
   }[];
 }
 
@@ -37,7 +54,9 @@ export function DashboardPage() {
   async function loadDashboard() {
     try {
       const response =
-        await api.get('/dashboard');
+        await api.get(
+          '/dashboard',
+        );
 
       setDashboard(
         response.data,
@@ -57,40 +76,113 @@ export function DashboardPage() {
     );
   }
 
+  const chartData =
+    dashboard?.appointmentsLast7Days.map(
+      (item) => ({
+        day: new Date(
+          item.date,
+        ).toLocaleDateString(
+          'pt-BR',
+          {
+            day: '2-digit',
+            month: '2-digit',
+          },
+        ),
+
+        consultas:
+          item._count.id,
+      }),
+    ) || [];
+
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold text-slate-800">
         Dashboard
       </h1>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-4 xl:grid-cols-4">
         <Card
           title="Pacientes"
           value={
-            dashboard.patients
-          }
-        />
-
-        <Card
-          title="Consultas"
-          value={
-            dashboard.appointments
+            dashboard?.patients || 0
           }
         />
 
         <Card
           title="Hoje"
           value={
-            dashboard.appointmentsToday
+            dashboard?.appointmentsToday ||
+            0
           }
         />
 
         <Card
           title="Confirmadas"
           value={
-            dashboard.confirmedAppointments
+            dashboard?.confirmedAppointments ||
+            0
           }
         />
+
+        <Card
+          title="Médicos"
+          value={
+            dashboard?.doctors || 0
+          }
+        />
+      </div>
+
+      <div className="mt-8 rounded-2xl bg-white p-6 shadow">
+        <h2 className="mb-4 text-xl font-bold">
+          Próximas Consultas
+        </h2>
+
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Paciente</th>
+              <th>Médico</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {dashboard?.nextAppointments.map(
+              (
+                appointment,
+              ) => (
+                <tr
+                  key={
+                    appointment.id
+                  }
+                >
+                  <td>
+                    {new Date(
+                      appointment.date,
+                    ).toLocaleString(
+                      'pt-BR',
+                    )}
+                  </td>
+
+                  <td>
+                    {
+                      appointment
+                        .patient
+                        .name
+                    }
+                  </td>
+
+                  <td>
+                    {
+                      appointment.user
+                        .name
+                    }
+                  </td>
+                </tr>
+              ),
+            )}
+          </tbody>
+        </table>
       </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm">
@@ -146,6 +238,31 @@ export function DashboardPage() {
             )}
           </div>
         )}
+      </div>
+
+      <div className="mt-8 rounded-2xl bg-white p-6 shadow">
+        <h2 className="mb-4 text-xl font-bold">
+          Consultas dos Últimos 7 Dias
+        </h2>
+
+        <ResponsiveContainer
+          width="100%"
+          height={300}
+        >
+          <BarChart
+            data={chartData}
+          >
+            <XAxis dataKey="day" />
+
+            <YAxis />
+
+            <Tooltip />
+
+            <Bar
+              dataKey="consultas"
+            />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

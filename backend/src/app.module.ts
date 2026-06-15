@@ -9,7 +9,15 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, PatientsModule, AppointmentsModule, DashboardModule, MedicalRecordsModule],
+  imports: [
+    PrismaModule, 
+    AuthModule, 
+    UsersModule, 
+    PatientsModule, 
+    AppointmentsModule, 
+    DashboardModule, 
+    MedicalRecordsModule
+  ],
   controllers: [],
 })
 export class AppModule {}

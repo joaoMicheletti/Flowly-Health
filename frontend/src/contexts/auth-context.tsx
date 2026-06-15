@@ -39,13 +39,24 @@ export function AuthProvider({
   const [user, setUser] =
     useState<User | null>(null);
 
+  useEffect(() => {
+    console.log(
+      'USER ALTEROU:',
+      user,
+    );
+  }, [user]);
+
   async function loadUser() {
     try {
       const response =
         await api.get('/auth/me');
+      console.log(
+        'AUTH ME:',
+        response.data,
+      );
 
       setUser(response.data);
-      console.log('resposta do load user aqui <><><><>',response.data.user)
+      console.log('resposta do load user aqui <><><><>',response.data)
     } catch (error) {
       console.error(error);
     }
@@ -67,7 +78,7 @@ export function AuthProvider({
       loadUser();
     }
   }, []);
-
+  console.log('user context:', user);
   return (
     <AuthContext.Provider
       value={{

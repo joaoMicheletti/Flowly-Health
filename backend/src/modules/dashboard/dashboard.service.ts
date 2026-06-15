@@ -33,6 +33,12 @@ export class DashboardService {
         },
       });
 
+    const doctors = await this.prisma.user.count({
+      where: {
+        role: 'DOCTOR',
+      },
+    });
+
     const confirmedAppointments =
       await this.prisma.appointment.count({
         where: {
@@ -59,13 +65,34 @@ export class DashboardService {
           date: 'asc',
         },
       });
+    const sevenDaysAgo = new Date();
+
+    sevenDaysAgo.setDate(
+      sevenDaysAgo.getDate() - 6,
+    );
+
+    const appointmentsLast7Days = await this.prisma.appointment.groupBy({
+        by: ['date'],
+
+        _count: {
+          id: true,
+        },
+
+        where: {
+          date: {
+            gte: sevenDaysAgo,
+          },
+        },
+    });
 
     return {
       patients,
       appointments,
       appointmentsToday,
       confirmedAppointments,
+      doctors,
       nextAppointments,
+      appointmentsLast7Days,
     };
   }
 }
