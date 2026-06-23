@@ -16,6 +16,24 @@ interface Patient {
   phone: string;
 }
 
+interface TimelineItem {
+  type: string;
+
+  date: string;
+
+  user: string;
+
+  status?: string;
+
+  appointmentType?: string;
+
+  diagnosis?: string | null;
+
+  chiefComplaint?: string | null;
+
+  notes?: string | null;
+}
+
 export function PatientsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPatientId, setEditingPatientId] = useState<string | null>(null);
@@ -38,6 +56,8 @@ export function PatientsPage() {
     const [prescription, setPrescription,] = useState('');
     const [returnDate, setReturnDate,] = useState('');
     const [notes, setNotes,] = useState('');
+    const [timeline, setTimeline] = useState([]);
+    
 
     useEffect(() => {
       const timer = setTimeout(() => {
@@ -196,9 +216,33 @@ export function PatientsPage() {
       } catch (error) {
         console.error(error);
       }
-    }
+  }
 
-  function openMedicalRecordModal(patient: Patient,) {
+  async function loadTimeline(
+    patientId: string,
+  ) {
+    try {
+      const response =
+        await api.get(
+          `/patients/${patientId}/timeline`,
+        );
+
+      setTimeline(
+        response.data,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function openMedicalRecordModal(patient: Patient,) {
+
+    loadMedicalRecords(patient.id);
+
+    loadTimeline(patient.id);
+
+    setIsMedicalRecordModalOpen(true);
+
     setSelectedPatientId(
       patient.id,
     );
@@ -214,6 +258,9 @@ export function PatientsPage() {
     setIsMedicalRecordModalOpen(
       true,
     );
+
+    await loadTimeline(patient.id,);
+    
   }
 
   async function handleCreateMedicalRecord() {
@@ -576,7 +623,101 @@ export function PatientsPage() {
 
           <hr />
 
+          <h3 className="text-lg font-semibold">
+            Timeline do Paciente
+          </h3>
+
           <div className="space-y-3">
+            {timeline.map((item, index) => (
+              <div
+                key={index}
+                className="relative mb-6"
+              >
+                <div className="absolute -left-[31px] top-2 h-4 w-4 rounded-full bg-blue-600">
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">
+                      {item.type === 'APPOINTMENT'
+                        ? 'Consulta'
+                        : 'Prontuário'}
+                    </span>
+
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs">
+                      {item.type}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-slate-600">
+                    Profissional:
+                    {' '}
+                    {item.user?.name}
+                  </p>
+
+                  {item.type ===
+                    'APPOINTMENT' && (
+                    <>
+                      <p>
+                        Tipo:
+                        {' '}
+                        {
+                          item.appointmentType
+                        }
+                      </p>
+
+                      <p>
+                        Status:
+                        {' '}
+                        {item.status}
+                      </p>
+                    </>
+                  )}
+
+                  {item.type ===
+                    'MEDICAL_RECORD' && (
+                    <>
+                      {item.chiefComplaint && (
+                        <p>
+                          <strong>
+                            Queixa:
+                          </strong>
+                          {' '}
+                          {
+                            item.chiefComplaint
+                          }
+                        </p>
+                      )}
+
+                      {item.diagnosis && (
+                        <p>
+                          <strong>
+                            Diagnóstico:
+                          </strong>
+                          {' '}
+                          {
+                            item.diagnosis
+                          }
+                        </p>
+                      )}
+
+                      {item.notes && (
+                        <p>
+                          <strong>
+                            Observações:
+                          </strong>
+                          {' '}
+                          {item.notes}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="relative ml-4 border-l-2 border-slate-200 pl-6">
             {medicalRecords
               .sort(
                 (a, b) =>
@@ -673,7 +814,7 @@ export function PatientsPage() {
                   </div>
                 </div>
               ))}
-          </div>
+        </div>
         </div>
       </Modal>
     </div>

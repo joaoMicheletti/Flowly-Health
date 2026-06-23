@@ -63,4 +63,14 @@ export class PatientsController {
   remove(@Param('id') id: string) {
     return this.patientsService.remove(id);
   }
+
+  @Get(':id/timeline')
+  getTimeline(
+    @Param('id')
+    id: string,
+  ) {
+    return this.patientsService.getTimeline(
+      id,
+    );
+  }
 }

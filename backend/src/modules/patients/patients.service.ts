@@ -92,4 +92,79 @@ export class PatientsService {
       },
     });
   }
+  
+  async getTimeline(
+    patientId: string,
+  ) {
+    const appointments =
+      await this.prisma.appointment.findMany({
+        where: {
+          patientId,
+        },
+
+        include: {
+          user: true,
+        },
+      });
+
+    const medicalRecords =
+      await this.prisma.medicalRecord.findMany({
+        where: {
+          patientId,
+        },
+
+        include: {
+          user: true,
+        },
+      });
+
+    const timeline = [
+      ...appointments.map(
+        (appointment) => ({
+          type: 'APPOINTMENT',
+
+          date: appointment.date,
+
+          user: {
+            id: appointment.user.id,
+            name: appointment.user.name,
+          },
+
+          status: appointment.status,
+
+          appointmentType:
+            appointment.type,
+        }),
+      ),
+
+      ...medicalRecords.map(
+        (record) => ({
+          type: 'MEDICAL_RECORD',
+
+          date: record.createdAt,
+
+          user: record.user.name,
+
+          diagnosis:
+            record.diagnosis,
+
+          chiefComplaint:
+            record.chiefComplaint,
+
+          notes:
+            record.notes,
+        }),
+      ),
+    ];
+
+    return timeline.sort(
+      (a, b) =>
+        new Date(
+          b.date,
+        ).getTime() -
+        new Date(
+          a.date,
+        ).getTime(),
+    );
+  }
 }
