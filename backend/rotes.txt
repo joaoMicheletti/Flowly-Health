@@ -1,0 +1,282 @@
+==========================================================
+FLOWLY HEALTH
+ROTAS PARA POPULAR O BANCO DE DADOS
+==========================================================
+
+Base URL
+
+http://localhost:3000
+
+----------------------------------------------------------
+1 - LOGIN
+----------------------------------------------------------
+
+POST /auth/login
+
+Body:
+
+{
+  "email": "admin@flowly.com",
+  "password": "123456"
+}
+
+Resposta:
+
+{
+  "access_token": "JWT_TOKEN"
+}
+
+Utilize este token em todas as demais requisições.
+
+Authorization:
+
+Bearer SEU_TOKEN
+
+==========================================================
+2 - CADASTRAR USUÁRIO
+==========================================================
+
+POST /users
+
+Authorization:
+Bearer TOKEN
+
+Body:
+
+{
+  "name": "Administrador",
+  "email": "admin@flowly.com",
+  "password": "123456",
+  "role": "ADMIN"
+}
+
+Roles disponíveis:
+
+ADMIN
+DOCTOR
+RECEPTIONIST
+
+Exemplo Médico
+
+{
+  "name": "Dr João Dias",
+  "email": "joao@flowly.com",
+  "password": "123456",
+  "role": "DOCTOR"
+}
+
+Exemplo Recepcionista
+
+{
+  "name": "Maria Souza",
+  "email": "maria@flowly.com",
+  "password": "123456",
+  "role": "RECEPTIONIST"
+}
+
+==========================================================
+3 - LISTAR USUÁRIOS
+==========================================================
+
+GET /users
+
+Authorization:
+Bearer TOKEN
+
+==========================================================
+4 - CADASTRAR PACIENTE
+==========================================================
+
+POST /patients
+
+Authorization:
+Bearer TOKEN
+
+Body:
+
+{
+  "name": "Matheus Pereira",
+  "email": "matheus@email.com",
+  "phone": "11999999999"
+}
+
+==========================================================
+5 - LISTAR PACIENTES
+==========================================================
+
+GET /patients
+
+Authorization:
+Bearer TOKEN
+
+==========================================================
+6 - EDITAR PACIENTE
+==========================================================
+
+PATCH /patients/{patientId}
+
+Authorization:
+Bearer TOKEN
+
+Body:
+
+{
+  "name": "Novo Nome",
+  "email": "novo@email.com",
+  "phone": "11988888888"
+}
+
+==========================================================
+7 - EXCLUIR PACIENTE
+==========================================================
+
+DELETE /patients/{patientId}
+
+Authorization:
+Bearer TOKEN
+
+==========================================================
+8 - AGENDAR CONSULTA
+==========================================================
+
+POST /appointments
+
+Authorization:
+Bearer TOKEN
+
+Body:
+
+{
+  "patientId": "UUID_DO_PACIENTE",
+  "userId": "UUID_DO_MEDICO",
+  "date": "2026-07-25T14:00:00.000Z",
+  "type": "CONSULTATION"
+}
+
+Tipos disponíveis
+
+CONSULTATION
+RETURN
+EVALUATION
+
+==========================================================
+9 - LISTAR CONSULTAS
+==========================================================
+
+GET /appointments
+
+Authorization:
+Bearer TOKEN
+
+==========================================================
+10 - ALTERAR STATUS DA CONSULTA
+==========================================================
+
+PATCH /appointments/{appointmentId}/status
+
+Body:
+
+{
+  "status": "FINISHED"
+}
+
+Status disponíveis
+
+SCHEDULED
+FINISHED
+CANCELLED
+
+==========================================================
+11 - CRIAR PRONTUÁRIO
+==========================================================
+
+POST /medical-records
+
+Authorization:
+Bearer TOKEN
+
+Body:
+
+{
+  "patientId": "UUID_DO_PACIENTE",
+  "userId": "UUID_DO_MEDICO",
+  "chiefComplaint": "Dor lombar",
+  "diagnosis": "Lombalgia",
+  "procedurePerformed": "Avaliação física",
+  "prescription": "Anti-inflamatório",
+  "returnDate": "2026-07-30",
+  "notes": "Paciente apresentou melhora."
+}
+
+==========================================================
+12 - HISTÓRICO DO PACIENTE
+==========================================================
+
+GET /medical-records/patient/{patientId}
+
+Authorization:
+Bearer TOKEN
+
+==========================================================
+13 - USUÁRIO LOGADO
+==========================================================
+
+GET /auth/me
+
+Authorization:
+Bearer TOKEN
+
+Retorna:
+
+{
+  "id": "...",
+  "name": "...",
+  "email": "...",
+  "role": "ADMIN"
+}
+
+==========================================================
+DADOS PARA TESTE
+==========================================================
+
+Administrador
+
+email:
+admin@flowly.com
+
+senha:
+123456
+
+----------------------------------------------------------
+
+Médico
+
+email:
+joao@flowly.com
+
+senha:
+123456
+
+----------------------------------------------------------
+
+Recepcionista
+
+email:
+maria@flowly.com
+
+senha:
+123456
+
+==========================================================
+OBSERVAÇÃO
+==========================================================
+
+A API utiliza autenticação JWT.
+
+Todas as rotas protegidas exigem:
+
+Authorization
+
+Bearer SEU_TOKEN
+
+==========================================================
