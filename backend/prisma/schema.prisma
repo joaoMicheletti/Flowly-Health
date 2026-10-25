@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,17 +8,50 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Clinic {
+  id        String  @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  isActive  Boolean @default(true)
+
+  subscriptionStatus    SubscriptionStatus @default(TRIAL)
+  subscriptionStartedAt DateTime?
+  subscriptionEndsAt    DateTime?
+
+  users          User[]
+  patients       Patient[]
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  EXPIRED
+  CANCELLED
+}
+
 model User {
-  id String @id @default(uuid())
+  id       String @id @default(uuid())
+  clinicId String
 
   name     String
   email    String @unique
   password String
+  role     UserRole @default(RECEPTIONIST)
 
-  role UserRole @default(RECEPTIONIST)
-
+  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Restrict)
   appointments   Appointment[]
   medicalRecords MedicalRecord[]
+
+  @@unique([clinicId, id])
+  @@index([clinicId])
+  @@index([clinicId, role])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -30,34 +64,44 @@ enum UserRole {
 }
 
 model Patient {
-  id        String   @id @default(uuid())
-  name      String
-  email     String
-  phone     String?
-  createdAt DateTime @default(now())
+  id       String @id @default(uuid())
+  clinicId String
 
+  name  String
+  email String
+  phone String?
+
+  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Restrict)
   appointments   Appointment[]
   medicalRecords MedicalRecord[]
+
+  @@unique([clinicId, id])
+  @@index([clinicId])
+  @@index([clinicId, name])
+
+  createdAt DateTime @default(now())
 }
 
 model Appointment {
-  id String @id @default(uuid())
-
+  id        String @id @default(uuid())
+  clinicId  String
   patientId String
   userId    String
 
-  date DateTime
-
+  date   DateTime
   status AppointmentStatus @default(SCHEDULED)
+  type   AppointmentType   @default(CONSULTATION)
 
-  type AppointmentType @default(CONSULTATION)
+  clinic  Clinic  @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  patient Patient @relation(fields: [clinicId, patientId], references: [clinicId, id], onDelete: Restrict)
+  user    User    @relation(fields: [clinicId, userId], references: [clinicId, id], onDelete: Restrict)
+
+  @@index([clinicId, date])
+  @@index([clinicId, patientId])
+  @@index([clinicId, userId, date])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  patient Patient @relation(fields: [patientId], references: [id])
-
-  user User @relation(fields: [userId], references: [id])
 }
 
 enum AppointmentStatus {
@@ -74,29 +118,25 @@ enum AppointmentType {
 }
 
 model MedicalRecord {
-  id String @id @default(uuid())
+  id        String @id @default(uuid())
+  clinicId  String
+  patientId String
+  userId    String
 
-  chiefComplaint String?
-
-  diagnosis String?
-
+  chiefComplaint     String?
+  diagnosis          String?
   procedurePerformed String?
+  prescription       String?
+  notes              String?
+  returnDate         DateTime?
 
-  prescription String?
+  clinic  Clinic  @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  patient Patient @relation(fields: [clinicId, patientId], references: [clinicId, id], onDelete: Restrict)
+  user    User    @relation(fields: [clinicId, userId], references: [clinicId, id], onDelete: Restrict)
 
-  notes String?
-
-  returnDate DateTime?
+  @@index([clinicId, patientId, createdAt])
+  @@index([clinicId, userId])
 
   createdAt DateTime @default(now())
-
   updatedAt DateTime @updatedAt
-
-  patientId String
-
-  patient Patient @relation(fields: [patientId], references: [id])
-
-  userId String
-
-  user User @relation(fields: [userId], references: [id])
 }

@@ -1,22 +1,21 @@
-import { Injectable } from '@nestjs/common';
 
-import { UserRole, Prisma} from '@prisma/client';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '@/prisma/prisma.service';
 
-import { BadRequestException } from '@nestjs/common';
-
-import * as bcrypt from 'bcrypt';
-
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
-      where: {
-        email,
-      },
+      where: { email },
     });
   }
 
@@ -25,23 +24,21 @@ export class UsersService {
     email: string;
     password: string;
     role: UserRole;
+    clinicId: string;
   }) {
-    const hashedPassword =
-    await bcrypt.hash(
-      data.password,
-      10,
-    );
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
     return this.prisma.user.create({
       data: {
         ...data,
         password: hashedPassword,
       },
-
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        clinicId: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -50,69 +47,85 @@ export class UsersService {
 
   async findById(id: string) {
     return this.prisma.user.findUnique({
-      where: {
-        id,
-      },
-
+      where: { id },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        clinicId: true,
       },
     });
   }
 
-  findAll() {
+  async findAll(clinicId: string) {
     return this.prisma.user.findMany({
+      where: { clinicId },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        clinicId: true,
       },
     });
   }
 
-  async findOne(id: string) {
-    return this.prisma.user.findUnique({
-      where: {
-        id,
-      },
+  async findOne(id: string, clinicId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, clinicId },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        clinicId: true,
         createdAt: true,
       },
     });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
-  async update(
-    id: string,
-    data: any,
-  ) {
+  async update(id: string, data: any, clinicId: string) {
+    await this.findOne(id, clinicId);
+
+    // Nunca permitir alterar a clínica pelo corpo da requisição.
+    const {
+      clinicId: ignoredClinicId,
+      id: ignoredId,
+      createdAt: ignoredCreatedAt,
+      updatedAt: ignoredUpdatedAt,
+      ...safeData
+    } = data;
+
+    if (safeData.password) {
+      safeData.password = await bcrypt.hash(safeData.password, 10);
+    }
+
     return this.prisma.user.update({
-      where: {
-        id,
-      },
-      data,
+      where: { id },
+      data: safeData,
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        clinicId: true,
         updatedAt: true,
       },
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, clinicId: string) {
+    await this.findOne(id, clinicId);
+
     return this.prisma.user.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
   }
 }

@@ -1,170 +1,125 @@
-import { Injectable } from '@nestjs/common';
 
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 
 @Injectable()
 export class PatientsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(data: CreatePatientDto) {
+  create(data: CreatePatientDto, clinicId: string) {
     return this.prisma.patient.create({
-      data,
+      data: {
+        ...data,
+        clinicId,
+      },
     });
   }
 
-  async findAll(
-    page: number,
-    limit: number,
-    search: string,
-  ) {
-    const skip =
-      (page - 1) * limit;
+  async findAll(page: number, limit: number, search: string, clinicId: string) {
+    const skip = (page - 1) * limit;
 
-    const [patients, total] =
-      await Promise.all([
-        this.prisma.patient.findMany({
-          skip,
+    const where = {
+      clinicId,
+      name: {
+        contains: search,
+        mode: 'insensitive' as const,
+      },
+    };
 
-          take: limit,
-
-          where: {
-            name: {
-              contains: search,
-
-              mode: 'insensitive',
-            },
-          },
-
-          orderBy: {
-            createdAt: 'desc',
-          },
-        }),
-
-        this.prisma.patient.count({
-          where: {
-            name: {
-              contains: search,
-
-              mode: 'insensitive',
-            },
-          },
-        }),
-      ]);
+    const [patients, total] = await Promise.all([
+      this.prisma.patient.findMany({
+        skip,
+        take: limit,
+        where,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.patient.count({ where }),
+    ]);
 
     return {
       data: patients,
-
       total,
-
       page,
-
-      lastPage: Math.ceil(
-        total / limit,
-      ),
+      lastPage: Math.ceil(total / limit),
     };
   }
 
-  findOne(id: string) {
-    return this.prisma.patient.findUnique({
-      where: {
-        id,
-      },
+  async findOne(id: string, clinicId: string) {
+    const patient = await this.prisma.patient.findFirst({
+      where: { id, clinicId },
     });
+
+    if (!patient) {
+      throw new NotFoundException('Patient not found');
+    }
+
+    return patient;
   }
 
-  update(id: string, data: UpdatePatientDto) {
-    return this.prisma.patient.update({
-      where: {
-        id,
-      },
+  async update(id: string, data: UpdatePatientDto, clinicId: string) {
+    await this.findOne(id, clinicId);
 
+    return this.prisma.patient.update({
+      where: { id },
       data,
     });
   }
 
-  remove(id: string) {
+  async remove(id: string, clinicId: string) {
+    await this.findOne(id, clinicId);
+
     return this.prisma.patient.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
   }
-  
-  async getTimeline(
-    patientId: string,
-  ) {
-    const appointments =
-      await this.prisma.appointment.findMany({
-        where: {
-          patientId,
-        },
 
+  async getTimeline(patientId: string, clinicId: string) {
+    await this.findOne(patientId, clinicId);
+
+    const [appointments, medicalRecords] = await Promise.all([
+      this.prisma.appointment.findMany({
+        where: { patientId, clinicId },
         include: {
-          user: true,
+          user: {
+            select: { id: true, name: true },
+          },
         },
-      });
-
-    const medicalRecords =
-      await this.prisma.medicalRecord.findMany({
-        where: {
-          patientId,
-        },
-
+      }),
+      this.prisma.medicalRecord.findMany({
+        where: { patientId, clinicId },
         include: {
-          user: true,
+          user: {
+            select: { id: true, name: true },
+          },
         },
-      });
+      }),
+    ]);
 
     const timeline = [
-      ...appointments.map(
-        (appointment) => ({
-          type: 'APPOINTMENT',
-
-          date: appointment.date,
-
-          user: {
-            id: appointment.user.id,
-            name: appointment.user.name,
-          },
-
-          status: appointment.status,
-
-          appointmentType:
-            appointment.type,
-        }),
-      ),
-
-      ...medicalRecords.map(
-        (record) => ({
-          type: 'MEDICAL_RECORD',
-
-          date: record.createdAt,
-
-          user: record.user.name,
-
-          diagnosis:
-            record.diagnosis,
-
-          chiefComplaint:
-            record.chiefComplaint,
-
-          notes:
-            record.notes,
-        }),
-      ),
+      ...appointments.map((appointment) => ({
+        type: 'APPOINTMENT',
+        date: appointment.date,
+        user: appointment.user,
+        status: appointment.status,
+        appointmentType: appointment.type,
+      })),
+      ...medicalRecords.map((record) => ({
+        type: 'MEDICAL_RECORD',
+        date: record.createdAt,
+        user: record.user,
+        diagnosis: record.diagnosis,
+        chiefComplaint: record.chiefComplaint,
+        notes: record.notes,
+      })),
     ];
 
     return timeline.sort(
-      (a, b) =>
-        new Date(
-          b.date,
-        ).getTime() -
-        new Date(
-          a.date,
-        ).getTime(),
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
   }
 }
