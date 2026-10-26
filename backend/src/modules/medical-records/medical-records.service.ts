@@ -11,11 +11,29 @@ export class MedicalRecordsService {
   constructor(private readonly prisma: PrismaService) {}
 
   
+  
   async create(
     data: CreateMedicalRecordDto,
     clinicId: string,
     userId: string,
   ) {
+    // 1. Verifica se o paciente pertence à clínica autenticada
+    const patient = await this.prisma.patient.findFirst({
+      where: {
+        id: data.patientId,
+        clinicId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // 2. Se não pertencer, interrompe a operação
+    if (!patient) {
+      throw new NotFoundException('Patient not found');
+    }
+
+    // 3. Cria o prontuário com os dados da sessão autenticada
     return this.prisma.medicalRecord.create({
       data: {
         ...data,
@@ -38,6 +56,7 @@ export class MedicalRecordsService {
       },
     });
   }
+
 
 
   async findByPatient(patientId: string, clinicId: string) {
