@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,11 +8,11 @@ datasource db {
 }
 
 model Clinic {
-  id        String  @id @default(uuid())
-  name      String
-  email     String?
-  phone     String?
-  isActive  Boolean @default(true)
+  id       String  @id @default(uuid())
+  name     String
+  email    String?
+  phone    String?
+  isActive Boolean @default(true)
 
   subscriptionStatus    SubscriptionStatus @default(TRIAL)
   subscriptionStartedAt DateTime?
@@ -23,6 +22,10 @@ model Clinic {
   patients       Patient[]
   appointments   Appointment[]
   medicalRecords MedicalRecord[]
+
+  prescriptions          Prescription[]
+  medicalCertificates    MedicalCertificate[]
+  attendanceDeclarations AttendanceDeclaration[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -41,20 +44,28 @@ model User {
   clinicId String
 
   name     String
-  email    String @unique
+  email    String   @unique
   password String
   role     UserRole @default(RECEPTIONIST)
+
+  crm   String?
+  crmUf String?
 
   clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Restrict)
   appointments   Appointment[]
   medicalRecords MedicalRecord[]
 
-  @@unique([clinicId, id])
-  @@index([clinicId])
-  @@index([clinicId, role])
+  prescriptions          Prescription[]
+  medicalCertificates    MedicalCertificate[]
+  attendanceDeclarations AttendanceDeclaration[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([clinicId, id])
+  @@index([clinicId])
+  @@index([clinicId, role])
+  @@index([crm, crmUf])
 }
 
 enum UserRole {
@@ -75,11 +86,15 @@ model Patient {
   appointments   Appointment[]
   medicalRecords MedicalRecord[]
 
+  prescriptions          Prescription[]
+  medicalCertificates    MedicalCertificate[]
+  attendanceDeclarations AttendanceDeclaration[]
+
+  createdAt DateTime @default(now())
+
   @@unique([clinicId, id])
   @@index([clinicId])
   @@index([clinicId, name])
-
-  createdAt DateTime @default(now())
 }
 
 model Appointment {
@@ -96,12 +111,15 @@ model Appointment {
   patient Patient @relation(fields: [clinicId, patientId], references: [clinicId, id], onDelete: Restrict)
   user    User    @relation(fields: [clinicId, userId], references: [clinicId, id], onDelete: Restrict)
 
-  @@index([clinicId, date])
-  @@index([clinicId, patientId])
-  @@index([clinicId, userId, date])
+  attendanceDeclarations AttendanceDeclaration[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([clinicId, id])
+  @@index([clinicId, date])
+  @@index([clinicId, patientId])
+  @@index([clinicId, userId, date])
 }
 
 enum AppointmentStatus {
@@ -134,9 +152,119 @@ model MedicalRecord {
   patient Patient @relation(fields: [clinicId, patientId], references: [clinicId, id], onDelete: Restrict)
   user    User    @relation(fields: [clinicId, userId], references: [clinicId, id], onDelete: Restrict)
 
-  @@index([clinicId, patientId, createdAt])
-  @@index([clinicId, userId])
+  prescriptions Prescription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([clinicId, id])
+  @@index([clinicId, patientId, createdAt])
+  @@index([clinicId, userId])
+}
+
+enum ClinicalDocumentStatus {
+  ISSUED
+  CANCELLED
+}
+
+model Prescription {
+  id              String  @id @default(uuid())
+  clinicId        String
+  patientId       String
+  userId          String
+  medicalRecordId String?
+
+  issuedAt DateTime               @default(now())
+  status   ClinicalDocumentStatus @default(ISSUED)
+  notes    String?
+  clinic   Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+
+  patient Patient @relation(fields: [clinicId, patientId], references: [clinicId, id], onDelete: Restrict)
+
+  user User @relation(fields: [clinicId, userId], references: [clinicId, id], onDelete: Restrict)
+
+  medicalRecord MedicalRecord? @relation(fields: [clinicId, medicalRecordId], references: [clinicId, id], onDelete: Restrict)
+
+  items PrescriptionItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, patientId, issuedAt])
+  @@index([clinicId, userId])
+  @@index([clinicId, medicalRecordId])
+}
+
+model PrescriptionItem {
+  id             String @id @default(uuid())
+  prescriptionId String
+
+  medicationName String
+  presentation   String?
+  concentration  String?
+  dose           String
+  route          String
+  frequency      String
+  duration       String
+  quantity       String
+  instructions   String?
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([prescriptionId])
+}
+
+model MedicalCertificate {
+  id        String @id @default(uuid())
+  clinicId  String
+  patientId String
+  userId    String
+
+  issuedAt  DateTime @default(now())
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+
+  status ClinicalDocumentStatus @default(ISSUED)
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+
+  patient Patient @relation(fields: [clinicId, patientId], references: [clinicId, id], onDelete: Restrict)
+
+  user User @relation(fields: [clinicId, userId], references: [clinicId, id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, patientId, issuedAt])
+  @@index([clinicId, userId])
+}
+
+model AttendanceDeclaration {
+  id            String  @id @default(uuid())
+  clinicId      String
+  patientId     String
+  userId        String
+  appointmentId String?
+
+  attendanceStartAt DateTime
+  attendanceEndAt   DateTime
+  issuedAt          DateTime @default(now())
+
+  status ClinicalDocumentStatus @default(ISSUED)
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+
+  patient Patient @relation(fields: [clinicId, patientId], references: [clinicId, id], onDelete: Restrict)
+
+  user User @relation(fields: [clinicId, userId], references: [clinicId, id], onDelete: Restrict)
+
+  appointment Appointment? @relation(fields: [clinicId, appointmentId], references: [clinicId, id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, patientId, issuedAt])
+  @@index([clinicId, appointmentId])
 }
