@@ -9,6 +9,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
 import { AttendanceDeclarationsModule } from './modules/attendance-declarations/attendance-declarations.module';
+import { MedicalCertificatesModule } from './modules/medical-certificates/medical-certificates.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AttendanceDeclarationsModule } from './modules/attendance-declarations/
     MedicalRecordsModule,
     PrescriptionsModule,
     AttendanceDeclarationsModule,
+    MedicalCertificatesModule,
   ],
   controllers: [],
 })
